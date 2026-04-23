@@ -62,10 +62,19 @@ BASELINE = {
 }
 
 COEFS = {
-    "inf_const": 0.054,  "inf_gdp": 0.548,  "inf_depr": 0.12,  "inf_us": 0.35,
+    # Inflation — stagflationary model
+    "inf_base":     0.075,   # KG long-run avg inflation ~7.5%
+    "inf_depr":     0.35,    # depreciation pass-through (high, KG ~60% imports)
+    "inf_us":       0.40,    # imported global inflation
+    "inf_gap":      0.30,    # positive output gap → inflation pressure DOWN (stable demand)
+    "inf_gdpshock": 2.50,    # negative gdp_shock → cost-push inflation UP (stagflation)
+    # Fiscal
     "fis_const": -0.044, "fis_gdp": 0.107,  "fis_gold": 0.00003,
+    # Exchange rate
     "fx_const":  31.85,  "fx_gold": 0.0227, "fx_fis":  -5.0,
+    # Debt
     "debt_fis":  -6.026, "debt_gdp": -0.127,"debt_gold": -0.0003,
+    # GDP growth
     "gr_const":  0.043,  "gr_gap":  0.924,  "gr_fis":   0.15,
 }
 
@@ -85,10 +94,21 @@ def simulate(params: dict, horizon: int) -> pd.DataFrame:
         fx   = max(prev["exchange_rate"] * 0.85,
                    COEFS["fx_const"] + COEFS["fx_gold"] * gold + COEFS["fx_fis"] * prev["fiscal_balance"])
         depr = (fx - prev["exchange_rate"]) / prev["exchange_rate"]
-        inflation = max(0.01, min(0.35,
-            COEFS["inf_const"] + COEFS["inf_gdp"] * prev["gdp_growth"]
-            + COEFS["inf_depr"] * max(depr, 0) + COEFS["inf_us"] * params["us_inf"]))
-        gap = prev["output_gap"] * 0.6 + params["gdp_shock"] * 0.5 + params.get("reform_coef", 0) * 0.005
+
+        # --- Inflation: stagflationary logic ---
+        # (+) depreciation pass-through (KG highly import-dependent, ~60% imports)
+        # (+) US inflation (global price import)
+        # (+) negative gdp_shock → supply disruption → cost-push inflation UP
+        # (-) positive output gap → demand managed, inflation lower (Phillips inverse)
+        gap_now = prev["output_gap"] * 0.6 + params["gdp_shock"] * 0.5 + params.get("reform_coef", 0) * 0.005
+        inflation = max(0.02, min(0.40,
+            COEFS["inf_base"]
+            + COEFS["inf_depr"]     * max(depr, 0)
+            + COEFS["inf_us"]       * params["us_inf"]
+            - COEFS["inf_gap"]      * gap_now
+            - COEFS["inf_gdpshock"] * params["gdp_shock"]))
+
+        gap = gap_now
         gdp_growth = max(-0.15, min(0.20,
             COEFS["gr_const"] + COEFS["gr_gap"] * gap
             + COEFS["gr_fis"] * (prev["fiscal_balance"] + params["fis_shock"])
