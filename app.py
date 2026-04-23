@@ -263,18 +263,29 @@ with tab1:
     st.plotly_chart(heatmap_ch(results,horizon),width='stretch')
 
     st.markdown('<div class="section-title">Матрица корреляций (2000–2023)</div>',unsafe_allow_html=True)
-    corr_df = pd.DataFrame({
-        "":           ["ВВП рост","Инфляция","Курс сом","Цена золота","Фис. баланс","Долг/ВВП","Разрыв выпуска"],
-        "ВВП рост":   [ 1.00, 0.34,-0.14,-0.15, 0.17,-0.13, 0.57],
-        "Инфляция":   [ 0.34, 1.00,-0.08, 0.08, 0.12,-0.09, 0.06],
-        "Курс сом":   [-0.14,-0.08, 1.00, 0.71, 0.07,-0.29, 0.23],
-        "Цена золота":[-0.15, 0.08, 0.71, 1.00, 0.25,-0.76, 0.14],
-        "Фис. баланс":[ 0.17, 0.12, 0.07, 0.25, 1.00,-0.65, 0.46],
-        "Долг/ВВП":   [-0.13,-0.09,-0.29,-0.76,-0.65, 1.00,-0.37],
-        "Разрыв выпуска":[ 0.57, 0.06, 0.23, 0.14, 0.46,-0.37, 1.00],
-    }).set_index("")
-    st.dataframe(corr_df.style.background_gradient(cmap="RdYlGn",vmin=-1,vmax=1).format("{:.2f}"),
-                 width='stretch')
+    corr_labels = ["ВВП рост","Инфляция","Курс сом","Цена золота","Фис. баланс","Долг/ВВП","Разрыв выпуска"]
+    corr_matrix = [
+        [ 1.00, 0.34,-0.14,-0.15, 0.17,-0.13, 0.57],
+        [ 0.34, 1.00,-0.08, 0.08, 0.12,-0.09, 0.06],
+        [-0.14,-0.08, 1.00, 0.71, 0.07,-0.29, 0.23],
+        [-0.15, 0.08, 0.71, 1.00, 0.25,-0.76, 0.14],
+        [ 0.17, 0.12, 0.07, 0.25, 1.00,-0.65, 0.46],
+        [-0.13,-0.09,-0.29,-0.76,-0.65, 1.00,-0.37],
+        [ 0.57, 0.06, 0.23, 0.14, 0.46,-0.37, 1.00],
+    ]
+    fig_corr = go.Figure(data=go.Heatmap(
+        z=corr_matrix, x=corr_labels, y=corr_labels,
+        colorscale=[[0,"#a12c7b"],[0.5,"#f9f8f5"],[1,"#437a22"]],
+        zmin=-1, zmax=1, zmid=0,
+        text=[[f"{v:.2f}" for v in row] for row in corr_matrix],
+        texttemplate="%{text}", textfont_size=11,
+        showscale=True, colorbar=dict(title="r", len=0.9),
+    ))
+    fig_corr.update_layout(
+        font_family="Inter, sans-serif", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#f9f8f5",
+        height=380, margin=dict(l=0,r=60,t=20,b=0),
+    )
+    st.plotly_chart(fig_corr, width='stretch')
 
 # ── ТАБ 2 ────────────────────────────────────────────────────
 with tab2:
